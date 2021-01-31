@@ -1,13 +1,18 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
+import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as Char8
 import qualified Data.Map as M
+import GHC.Generics
 import JavaScript.Web.XMLHttpRequest
 import Miso
-import Miso.String (MisoString, fromMisoString, toMisoString)
+import Miso.String (MisoString, fromMisoString, pack, toMisoString)
 
 data Model = Model {album :: Album} deriving (Eq)
 
@@ -17,9 +22,9 @@ data Album = Album
     source :: Source,
     tags :: [Tag]
   }
-  deriving (Eq)
+  deriving (Eq, Generic, ToJSON)
 
-data Source = CD | LP | Digital deriving (Show, Eq)
+data Source = CD | LP | Digital deriving (Show, Eq, Generic, ToJSON)
 
 type Tag = String
 
@@ -69,14 +74,24 @@ demoModel =
 
 updateModel :: Action -> Model -> Effect Action Model
 updateModel NoOp m = noEff m
-updateModel SubmitForm m =
-  m <# do consoleLog "The form is submitted" >> pure NoOp
 updateModel AddTag model@(Model {..}) =
   noEff (model {album = addTag album})
 updateModel (RemoveTag i) model@(Model {..}) =
   noEff (model {album = removeTag album i})
 updateModel (UpdateTag i tag) model@(Model {..}) =
   noEff (model {album = updateTag album i (fromMisoString tag)})
+updateModel SubmitForm model@(Model {..}) =
+  model <# do xhrByteString req >> pure NoOp
+  where
+    req =
+      Request
+        { reqMethod = POST,
+          reqURI = pack "https://reqres.in/api/users", -- Just some dummy REST API
+          reqLogin = Nothing,
+          reqHeaders = [],
+          reqWithCredentials = False,
+          reqData = StringData $ pack $ Char8.unpack $ encode album
+        }
 
 viewModel :: Model -> View Action
 viewModel (Model {album = Album {..}}) =
