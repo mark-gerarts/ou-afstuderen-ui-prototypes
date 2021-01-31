@@ -13,6 +13,7 @@
 - Rechtstreeks Haskell kunnen gebruiken is wel een groot voordeel
   - Autocomplete in vscode werkt niet out-of-the-box zoals bij een Stack project
 - Werking doet aan Elm denken, eenvoudig en vlot
+- Debuggen is niet gemakkelijk
 
 ## Usage
 

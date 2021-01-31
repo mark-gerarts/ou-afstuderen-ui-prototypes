@@ -12,7 +12,7 @@ import           Network.WebSockets
 import Control.Monad.IO.Class
 import qualified Data.Map as M
 import Miso
-import Miso.String hiding (map)
+import Miso.String (MisoString, fromMisoString, toMisoString)
 
 data Model = Model {album :: Album} deriving (Eq)
 
@@ -28,7 +28,13 @@ data Source = CD | LP | Digital deriving (Show, Eq)
 
 type Tag = String
 
-data Action = SubmitForm | AddTag | NoOp deriving (Show, Eq)
+data Action
+  = SubmitForm
+  | AddTag
+  | RemoveTag Int
+  | UpdateTag Int MisoString
+  | NoOp
+  deriving (Show, Eq)
 
 #ifndef __GHCJS__
 runApp :: JSM () -> IO ()
@@ -80,8 +86,12 @@ updateModel :: Action -> Model -> Effect Action Model
 updateModel NoOp m = noEff m
 updateModel SubmitForm m =
   m <# do consoleLog "The form is submitted" >> pure NoOp
-updateModel AddTag model@(Model {album = album@(Album {..})}) =
-  noEff (model {album = album {tags = tags ++ [""]}})
+updateModel AddTag model@(Model {..}) =
+  noEff (model {album = addTag album})
+updateModel (RemoveTag i) model@(Model {..}) =
+  noEff (model {album = removeTag album i})
+updateModel (UpdateTag i tag) model@(Model {..}) =
+  noEff (model {album = updateTag album i (fromMisoString tag)})
 
 viewModel :: Model -> View Action
 viewModel (Model {album = Album {..}}) =
@@ -115,19 +125,34 @@ viewModel (Model {album = Album {..}}) =
         ],
       div_
         []
-        ([label_ [] [text "Tags"]] ++ map tagToInput tags ++ [button_ [onClick AddTag] [text "Add more"]]),
+        ( [label_ [] [text "Tags"]]
+            ++ ( map
+                   (uncurry viewTag)
+                   (zip tags [0 ..])
+               )
+            ++ [button_ [onClick AddTag] [text "Add more"]]
+        ),
       button_
         [onClick SubmitForm]
         [text "Submit"]
     ]
 
-inlineBlock :: Attribute action
-inlineBlock = style_ $ M.singleton "display" "inline-block"
-
-tagToInput :: Tag -> View action
-tagToInput tag =
+viewTag :: Tag -> Int -> View Action
+viewTag tag i =
   div_
     []
-    [ input_ [id_ "tags", inlineBlock, value_ $ toMisoString tag],
-      button_ [inlineBlock] [text "Remove"] -- @todo: implement remove
+    [ input_ [id_ "tags", inlineBlock, value_ $ toMisoString tag, onInput $ UpdateTag i],
+      button_ [inlineBlock, onClick $ RemoveTag i] [text "Remove"]
     ]
+
+inlineBlock :: Attribute Action
+inlineBlock = style_ $ M.singleton "display" "inline-block"
+
+addTag :: Album -> Album
+addTag Album {..} = Album {tags = tags ++ [""], ..}
+
+removeTag :: Album -> Int -> Album
+removeTag (Album {..}) i = Album {tags = take i tags ++ drop (i + 1) tags, ..}
+
+updateTag :: Album -> Int -> String -> Album
+updateTag (Album {..}) i tag = Album {tags = take i tags ++ [tag] ++ drop (i + i) tags, ..}
