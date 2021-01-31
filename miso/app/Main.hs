@@ -4,13 +4,8 @@
 
 module Main where
 
-#ifndef __GHCJS__
-import           Language.Javascript.JSaddle.Warp as JSaddle
-import qualified Network.Wai.Handler.Warp         as Warp
-import           Network.WebSockets
-#endif
-import Control.Monad.IO.Class
 import qualified Data.Map as M
+import JavaScript.Web.XMLHttpRequest
 import Miso
 import Miso.String (MisoString, fromMisoString, toMisoString)
 
@@ -36,18 +31,8 @@ data Action
   | NoOp
   deriving (Show, Eq)
 
-#ifndef __GHCJS__
-runApp :: JSM () -> IO ()
-runApp f =
-  Warp.runSettings (Warp.setPort 8080 (Warp.setTimeout 3600 Warp.defaultSettings)) =<<
-    JSaddle.jsaddleOr defaultConnectionOptions (f >> syncPoint) JSaddle.jsaddleApp
-#else
-runApp :: IO () -> IO ()
-runApp app = app
-#endif
-
 main :: IO ()
-main = runApp $ startApp App {..}
+main = startApp App {..}
   where
     initialAction = NoOp
     model = demoModel
