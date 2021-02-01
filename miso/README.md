@@ -29,6 +29,14 @@ $ nix-shell
 $ nix-shell default.nix -A env --run 'ag -l | entr sh -c "cabal build"'
 ```
 
+To actually play around with the prototype and perform requests, you'll have to spin up a little webserver:
+
+```
+$ # In a separate terminal window
+$ nix-shell
+$ php -S localhost:8080 server.php
+```
+
 The result can be found in the `dist-newstyle` directory.
 
 This was the old JSaddle workflow - which sadly is no longer relevant, because it can't be (easily)

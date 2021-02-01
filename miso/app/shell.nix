@@ -8,6 +8,7 @@ mkShell {
     cabal-install
     ag
     entr
+    php
   ];
 
 }

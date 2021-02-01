@@ -8,13 +8,21 @@ module Main where
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as Char8
+import Data.List (intercalate)
 import qualified Data.Map as M
 import GHC.Generics
 import JavaScript.Web.XMLHttpRequest
 import Miso
 import Miso.String (MisoString, fromMisoString, pack, toMisoString)
 
-data Model = Model {album :: Album} deriving (Eq)
+data Model = Model
+  { -- | The album tied to the form
+    album :: Album,
+    submitted :: Bool,
+    -- | The server response for displaying JSON data
+    serverResponse :: Maybe Album
+  }
+  deriving (Eq)
 
 data Album = Album
   { name :: String,
@@ -22,9 +30,13 @@ data Album = Album
     source :: Source,
     tags :: [Tag]
   }
-  deriving (Eq, Generic, ToJSON)
+  deriving (Eq, Generic, ToJSON, FromJSON, Show)
 
-data Source = CD | LP | Digital deriving (Show, Eq, Generic, ToJSON)
+data Source
+  = CD
+  | LP
+  | Digital
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
 type Tag = String
 
@@ -33,6 +45,8 @@ data Action
   | AddTag
   | RemoveTag Int
   | UpdateTag Int MisoString
+  | FetchAlbumData
+  | SetAlbumData Album
   | NoOp
   deriving (Show, Eq)
 
@@ -57,7 +71,9 @@ initialModel =
             artist = "",
             source = CD,
             tags = []
-          }
+          },
+      submitted = False,
+      serverResponse = Nothing
     }
 
 demoModel :: Model
@@ -69,7 +85,9 @@ demoModel =
             artist = "ArtistName",
             source = Digital,
             tags = ["First Tag"]
-          }
+          },
+      submitted = False,
+      serverResponse = Nothing
     }
 
 updateModel :: Action -> Model -> Effect Action Model
@@ -81,20 +99,14 @@ updateModel (RemoveTag i) model@(Model {..}) =
 updateModel (UpdateTag i tag) model@(Model {..}) =
   noEff (model {album = updateTag album i (fromMisoString tag)})
 updateModel SubmitForm model@(Model {..}) =
-  model <# do xhrByteString req >> pure NoOp
-  where
-    req =
-      Request
-        { reqMethod = POST,
-          reqURI = pack "https://reqres.in/api/users", -- Just some dummy REST API
-          reqLogin = Nothing,
-          reqHeaders = [],
-          reqWithCredentials = False,
-          reqData = StringData $ pack $ Char8.unpack $ encode album
-        }
+  model {submitted = True} <# do submitAlbum album >> pure NoOp
+updateModel FetchAlbumData model =
+  model <# do SetAlbumData <$> fetchAlbum
+updateModel (SetAlbumData album) model =
+  noEff model {serverResponse = Just album}
 
 viewModel :: Model -> View Action
-viewModel (Model {album = Album {..}}) =
+viewModel (Model {album = Album {..}, ..}) =
   div_ -- I'd rather use a form + onSubmit here, but JSaddle bugs with preventDefault...
     []
     [ link_
@@ -133,8 +145,15 @@ viewModel (Model {album = Album {..}}) =
             ++ [button_ [onClick AddTag] [text "Add more"]]
         ),
       button_
-        [onClick SubmitForm]
-        [text "Submit"]
+        [onClick SubmitForm, disabled_ submitted]
+        [text $ if submitted then "Submitted!" else "Submit"],
+      h2_ [] [text "Displaying JSON data"],
+      case serverResponse of
+        Nothing ->
+          button_
+            [onClick FetchAlbumData]
+            [text "Fetch album from server"]
+        Just album -> viewAlbum album
     ]
 
 viewTag :: Tag -> Int -> View Action
@@ -143,6 +162,20 @@ viewTag tag i =
     []
     [ input_ [id_ "tags", inlineBlock, value_ $ toMisoString tag, onInput $ UpdateTag i],
       button_ [inlineBlock, onClick $ RemoveTag i] [text "Remove"]
+    ]
+
+viewAlbum :: Album -> View Action
+viewAlbum Album {..} =
+  dl_
+    []
+    [ dt_ [] [text "Title:"],
+      dd_ [] [text $ toMisoString name],
+      dt_ [] [text "Artist:"],
+      dd_ [] [text $ toMisoString artist],
+      dt_ [] [text "Source:"],
+      dd_ [] [text $ toMisoString $ show source],
+      dt_ [] [text "Tags:"],
+      dd_ [] [text $ toMisoString $ intercalate ", " tags]
     ]
 
 inlineBlock :: Attribute Action
@@ -156,3 +189,34 @@ removeTag (Album {..}) i = Album {tags = take i tags ++ drop (i + 1) tags, ..}
 
 updateTag :: Album -> Int -> String -> Album
 updateTag (Album {..}) i tag = Album {tags = take i tags ++ [tag] ++ drop (i + i) tags, ..}
+
+submitAlbum :: Album -> IO ()
+submitAlbum album = do
+  xhrByteString req >> pure ()
+  where
+    req =
+      Request
+        { reqMethod = POST,
+          reqURI = pack "http://localhost:8080", -- Don't forget to spin it up.
+          reqLogin = Nothing,
+          reqHeaders = [],
+          reqWithCredentials = False,
+          reqData = StringData $ pack $ Char8.unpack $ encode album
+        }
+
+fetchAlbum :: IO Album
+fetchAlbum = do
+  Just resp <- contents <$> xhrByteString req
+  case eitherDecodeStrict resp :: Either String Album of
+    Left s -> error s
+    Right j -> pure j
+  where
+    req =
+      Request
+        { reqMethod = GET,
+          reqURI = pack "http://localhost:8080/album/1",
+          reqLogin = Nothing,
+          reqHeaders = [],
+          reqWithCredentials = False,
+          reqData = NoData
+        }
