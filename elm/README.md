@@ -5,6 +5,8 @@
 - Idem voor `elm reactor`
 - `elm-live` is handig om live code changes te hebben
 - `elm-format` is goed om een algemene style guide te hebben
+- Het typesystem van Elm is minder uitgebreid dan dit van Haskell (typeclasses)
+- Lijkt enorm op Miso (of eerder omgekeerd eigenlijk)
 
 ## Usage
 
