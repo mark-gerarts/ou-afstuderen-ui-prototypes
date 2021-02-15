@@ -2,7 +2,13 @@
 
 with pkgs;
 
-mkShell {
+let
+
+  run-elm-live = writeScriptBin "run-elm-live" ''
+    elm-live src/Main.elm -s main.html -- --output=main.js
+  '';
+
+in mkShell {
 
   nativeBuildInputs = with elmPackages; [
     elm
@@ -10,6 +16,5 @@ mkShell {
     elm-format
   ];
 
-  shellHook = ''
-  '';
+  buildInputs = [ run-elm-live ];
 }

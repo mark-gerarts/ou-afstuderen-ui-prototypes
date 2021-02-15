@@ -14,8 +14,7 @@ Development:
 
 ```
 $ nix-shell --run 'code .' & # Liefst met Elm extension
-$ nix-shell
-$ elm-live src/Main.elm -s main.html -- --output=main.js
+$ nix-shell --run run-elm-live # Live code reloading
 ```
 
 View your site at http://localhost:8000/

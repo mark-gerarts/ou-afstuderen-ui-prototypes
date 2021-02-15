@@ -2,12 +2,14 @@ module Main exposing (..)
 
 import Browser
 import Html exposing (Html, button, div, form, h1, h2, input, label, option, select, text)
-import Html.Attributes exposing (selected, style, value)
-import Html.Events exposing (onClick, onSubmit)
+import Html.Attributes exposing (disabled, selected, style, value)
+import Html.Events exposing (onClick, onInput, onSubmit)
 
 
 type alias Model =
-    { album : Album }
+    { album : Album
+    , submitted : Bool
+    }
 
 
 type alias Album =
@@ -28,6 +30,8 @@ type Msg
     = NoOp
     | AddTag
     | RemoveTag Int
+    | UpdateTag Int String
+    | SubmitForm
 
 
 main =
@@ -40,7 +44,9 @@ main =
 
 initialModel : Model
 initialModel =
-    { album = exampleAlbum }
+    { album = exampleAlbum
+    , submitted = False
+    }
 
 
 exampleAlbum : Album
@@ -62,7 +68,14 @@ update msg model =
             { model | album = addTag model.album "" }
 
         RemoveTag i ->
-            model
+            { model | album = removeTag model.album i }
+
+        UpdateTag i newTag ->
+            { model | album = updateTag model.album i newTag }
+
+        SubmitForm ->
+            -- @todo: http request
+            { model | submitted = True }
 
 
 addTag : Album -> String -> Album
@@ -75,17 +88,22 @@ removeTag album i =
     { album | tags = List.take i album.tags ++ List.drop (i + 1) album.tags }
 
 
+updateTag : Album -> Int -> String -> Album
+updateTag album i newTag =
+    { album | tags = List.take i album.tags ++ [ newTag ] ++ List.drop (i + 1) album.tags }
+
+
 view : Model -> Html Msg
-view { album } =
+view model =
     div []
         [ h1 [] [ text "Elm" ]
         , h2 [] [ text "Album form" ]
-        , viewAlbumForm album
+        , viewAlbumForm model
         ]
 
 
-viewAlbumForm : Album -> Html Msg
-viewAlbumForm album =
+viewAlbumForm : Model -> Html Msg
+viewAlbumForm { album, submitted } =
     div []
         [ div []
             [ label [] [ text "Name" ]
@@ -102,12 +120,22 @@ viewAlbumForm album =
         , div []
             (List.concat
                 [ [ label [] [ text "Tags" ] ]
-                , List.map (viewTag 0)
-                    album.tags
+                , List.indexedMap (\i t -> viewTag i t) album.tags
                 , [ button [ onClick AddTag ] [ text "Add more" ] ]
                 ]
             )
-        , button [] [ text "submit" ]
+        , button
+            [ disabled submitted
+            , onClick SubmitForm
+            ]
+            [ text
+                (if submitted then
+                    "Submitted!"
+
+                 else
+                    "Submit"
+                )
+            ]
         ]
 
 
@@ -136,7 +164,12 @@ sourceToString source =
 viewTag : Int -> String -> Html Msg
 viewTag i tag =
     div []
-        [ input [ style "display" "inline-block", value tag ] []
+        [ input
+            [ style "display" "inline-block"
+            , value tag
+            , onInput (UpdateTag i)
+            ]
+            []
         , button
             [ style "display" "inline-block"
             , onClick (RemoveTag i)
