@@ -19,28 +19,23 @@
 
 ## Usage
 
-The current workflow: we nix-shell one time to get dependencies such as cabal, entr, ... The Miso manual
-installs these globally, which we don't want.
+The current workflow: we nix-shell one time to get dependencies such as cabal,
+entr, ... The Miso manual installs these globally, which we don't want.
 
-Inside this shell we run nix-shell again to rebuild on file changes, as described in the manual.
+Inside this shell we run nix-shell again to rebuild on file changes, as
+described in the manual.
 
 ```
 $ nix-shell
 $ nix-shell default.nix -A env --run 'ag -l | entr sh -c "cabal build"'
 ```
 
-To actually play around with the prototype and perform requests, you'll have to spin up a little webserver:
+The result can be found in the `dist-newstyle` directory. To test it out, don't
+forget to start the [webserver](../server/README.md).
 
-```
-$ # In a separate terminal window
-$ nix-shell
-$ php -S localhost:8080 server.php
-```
-
-The result can be found in the `dist-newstyle` directory.
-
-This was the old JSaddle workflow - which sadly is no longer relevant, because it can't be (easily)
-combined with XHR requests. It was accessible at `localhost:8080`.
+This was the old JSaddle workflow - which sadly is no longer relevant, because
+it can't be (easily) combined with XHR requests. It was accessible at
+`localhost:8080`.
 
 ```
 $ # JSaddle dev:
