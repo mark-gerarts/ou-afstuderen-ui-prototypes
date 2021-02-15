@@ -1,9 +1,8 @@
 # Elm
 
 - Gemakkelijke installatie
-- `elm init` is erg user friendly
-- Idem voor `elm reactor`
-- `elm-live` is handig om live code changes te hebben
+- `elm init` is erg user friendly, idem voor `elm reactor`
+- `elm-live` is handig om live code changes te hebben, en in-app error messages
 - `elm-format` is goed om een algemene style guide te hebben
 - Het typesystem van Elm is minder uitgebreid dan dit van Haskell (typeclasses)
   - Het gebrek aan typeclasses/generics kan problematisch zijn voor onze use case

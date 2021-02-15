@@ -1,7 +1,7 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, button, div, form, h1, h2, input, label, option, select, source, text)
+import Html exposing (Html, button, dd, div, dl, dt, form, h1, h2, input, label, option, select, source, text)
 import Html.Attributes exposing (disabled, selected, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
@@ -12,6 +12,7 @@ import Json.Encode as JsonEncode
 type alias Model =
     { album : Album
     , submitted : Bool
+    , serverResponse : Maybe Album
     }
 
 
@@ -33,6 +34,8 @@ type Msg
     = Update UpdateAlbum
     | SubmitForm
     | FormSubmitted (Result Http.Error ())
+    | FetchAlbum
+    | AlbumFetched (Result Http.Error Album)
 
 
 type UpdateAlbum
@@ -58,6 +61,7 @@ initialModel : Model
 initialModel =
     { album = exampleAlbum
     , submitted = False
+    , serverResponse = Nothing
     }
 
 
@@ -103,6 +107,15 @@ update msg model =
                 UpdateTag i tag ->
                     ( { model | album = updateTag album i tag }, Cmd.none )
 
+        FetchAlbum ->
+            ( model, fetchAlbum )
+
+        AlbumFetched (Ok album) ->
+            ( { model | serverResponse = Just album }, Cmd.none )
+
+        AlbumFetched (Err _) ->
+            ( model, Cmd.none )
+
 
 addTag : Album -> String -> Album
 addTag album tag =
@@ -123,13 +136,13 @@ submitAlbum : Album -> Cmd Msg
 submitAlbum album =
     Http.post
         { url = "http://localhost:8080"
-        , body = Http.jsonBody (encode album)
+        , body = Http.jsonBody (encodeAlbum album)
         , expect = Http.expectWhatever FormSubmitted
         }
 
 
-encode : Album -> JsonEncode.Value
-encode album =
+encodeAlbum : Album -> JsonEncode.Value
+encodeAlbum album =
     JsonEncode.object
         [ ( "name", JsonEncode.string album.name )
         , ( "artist", JsonEncode.string album.artist )
@@ -138,12 +151,28 @@ encode album =
         ]
 
 
+albumDecoder : JsonDecode.Decoder Album
+albumDecoder =
+    JsonDecode.map4 Album
+        (JsonDecode.field "name" JsonDecode.string)
+        (JsonDecode.field "artist" JsonDecode.string)
+        (JsonDecode.map sourceFromString (JsonDecode.field "source" JsonDecode.string))
+        (JsonDecode.field "tags" (JsonDecode.list JsonDecode.string))
+
+
 view : Model -> Html Msg
 view model =
     div []
         [ h1 [] [ text "Elm" ]
         , h2 [] [ text "Album form" ]
         , viewAlbumForm model
+        , h2 [] [ text "Displaying JSON data" ]
+        , case model.serverResponse of
+            Nothing ->
+                button [ onClick FetchAlbum ] [ text "Fetch album from server" ]
+
+            Just album ->
+                viewAlbum album
         ]
 
 
@@ -242,3 +271,25 @@ viewTag i tag =
             ]
             [ text "Remove" ]
         ]
+
+
+viewAlbum : Album -> Html Msg
+viewAlbum album =
+    dl []
+        [ dt [] [ text "Title:" ]
+        , dd [] [ text album.name ]
+        , dt [] [ text "Artist" ]
+        , dd [] [ text album.artist ]
+        , dt [] [ text "Source:" ]
+        , dd [] [ text (sourceToString album.source) ]
+        , dt [] [ text "Tags:" ]
+        , dd [] [ text (String.join ", " album.tags) ]
+        ]
+
+
+fetchAlbum : Cmd Msg
+fetchAlbum =
+    Http.get
+        { url = "http://localhost:8080/album/1"
+        , expect = Http.expectJson AlbumFetched albumDecoder
+        }
