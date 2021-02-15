@@ -1,9 +1,12 @@
 module Main exposing (..)
 
 import Browser
-import Html exposing (Html, button, div, form, h1, h2, input, label, option, select, text)
+import Html exposing (Html, button, div, form, h1, h2, input, label, option, select, source, text)
 import Html.Attributes exposing (disabled, selected, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
+import Http
+import Json.Decode as JsonDecode
+import Json.Encode as JsonEncode
 
 
 type alias Model =
@@ -32,13 +35,16 @@ type Msg
     | RemoveTag Int
     | UpdateTag Int String
     | SubmitForm
+    | FormSubmitted (Result Http.Error ())
 
 
+main : Program () Model Msg
 main =
-    Browser.sandbox
-        { init = initialModel
+    Browser.element
+        { init = \flags -> ( initialModel, Cmd.none )
         , update = update
         , view = view
+        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -58,24 +64,26 @@ exampleAlbum =
     }
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-            model
+            ( model, Cmd.none )
 
         AddTag ->
-            { model | album = addTag model.album "" }
+            ( { model | album = addTag model.album "" }, Cmd.none )
 
         RemoveTag i ->
-            { model | album = removeTag model.album i }
+            ( { model | album = removeTag model.album i }, Cmd.none )
 
         UpdateTag i newTag ->
-            { model | album = updateTag model.album i newTag }
+            ( { model | album = updateTag model.album i newTag }, Cmd.none )
 
         SubmitForm ->
-            -- @todo: http request
-            { model | submitted = True }
+            ( model, submitAlbum model.album )
+
+        FormSubmitted _ ->
+            ( { model | submitted = True }, Cmd.none )
 
 
 addTag : Album -> String -> Album
@@ -91,6 +99,25 @@ removeTag album i =
 updateTag : Album -> Int -> String -> Album
 updateTag album i newTag =
     { album | tags = List.take i album.tags ++ [ newTag ] ++ List.drop (i + 1) album.tags }
+
+
+submitAlbum : Album -> Cmd Msg
+submitAlbum album =
+    Http.post
+        { url = "http://localhost:8080"
+        , body = Http.jsonBody (encode album)
+        , expect = Http.expectWhatever FormSubmitted
+        }
+
+
+encode : Album -> JsonEncode.Value
+encode album =
+    JsonEncode.object
+        [ ( "name", JsonEncode.string album.name )
+        , ( "artist", JsonEncode.string album.artist )
+        , ( "source", JsonEncode.string (sourceToString album.source) )
+        , ( "tags", JsonEncode.list JsonEncode.string album.tags )
+        ]
 
 
 view : Model -> Html Msg
