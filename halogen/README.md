@@ -2,6 +2,7 @@
 
 - Tot nu toe is de werking heel eenvoudig: `spago init` zet veel klaar.
 - De starter template (deze dus) heeft zelfs live reloading ingebakken
+- Het opbouwen van HTML en events etc lijkt enorm op Elm en Miso
 
 ## Usage
 
@@ -14,3 +15,11 @@ $ nix-shell --run serve
 
 For more information, see the template's repository:
 https://github.com/purescript-halogen/purescript-halogen-template
+
+Run vscode the usual way, to get highlighting and formatting etc:
+
+```
+$ nix-shell --run 'code .'
+```
+
+Extension: nwolverson.ide-purescript

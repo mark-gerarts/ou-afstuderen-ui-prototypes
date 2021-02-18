@@ -15,6 +15,7 @@ in mkShell {
     spago
     nodejs
     nodePackages.parcel-bundler
+    nodePackages.purty
   ];
 
   buildInputs = [ serve ];
