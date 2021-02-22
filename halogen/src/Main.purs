@@ -48,6 +48,9 @@ data Action
   | AddTag
   | RemoveTag Int
   | UpdateTag Int Tag
+  | UpdateName String
+  | UpdateArtist String
+  | UpdateSource Source
 
 component :: forall q i o m. H.Component HH.HTML q i o m
 component =
@@ -72,6 +75,9 @@ handleAction = case _ of
   AddTag -> H.modify_ \state -> state { album = addTag state.album "" }
   UpdateTag i tag -> H.modify_ \state -> state { album = updateTag state.album i tag }
   RemoveTag i -> H.modify_ \state -> state { album = removeTag state.album i }
+  UpdateName name -> H.modify_ \state -> state { album = state.album { name = name } }
+  UpdateArtist artist -> H.modify_ \state -> state { album = state.album { artist = artist } }
+  UpdateSource source -> H.modify_ \state -> state { album = state.album { source = source } }
 
 addTag :: Album -> Tag -> Album
 addTag album tag = album { tags = album.tags <> [ tag ] }
@@ -98,15 +104,23 @@ renderAlbumForm { album } =
     []
     [ HH.div_
         [ HH.label_ [ HH.text "Name" ]
-        , HH.input [ HP.value album.name ]
+        , HH.input
+            [ HP.value album.name
+            , HE.onValueInput $ Just <<< UpdateName
+            ]
         ]
     , HH.div_
         [ HH.label_ [ HH.text "Artist" ]
-        , HH.input [ HP.value album.artist ]
+        , HH.input
+            [ HP.value album.artist
+            , HE.onValueInput $ \x -> Just (UpdateArtist x)
+            ]
         ]
     , HH.div_
         [ HH.label_ [ HH.text "Source" ]
-        , HH.select_ (map (renderSourceOption album.source) [ CD, LP, Digital ])
+        , HH.select
+            [ HE.onValueChange $ Just <<< UpdateSource <<< sourceFromString ]
+            (map (renderSourceOption album.source) [ CD, LP, Digital ])
         ]
     , HH.div_
         ( [ HH.label_ [ HH.text "Tags" ] ]
@@ -140,3 +154,9 @@ renderTag i tag =
 
 inlineBlock :: forall a b. HP.IProp a b
 inlineBlock = HP.prop (HH.PropName "style") "display: inline-block"
+
+sourceFromString :: String -> Source
+sourceFromString x = case x of
+  "CD" -> CD
+  "LP" -> LP
+  _ -> Digital
