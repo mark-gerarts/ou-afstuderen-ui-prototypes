@@ -2,7 +2,8 @@ module Main where
 
 import Prelude
 import Control.Monad.State (class MonadState)
-import Data.Maybe (Maybe(..))
+import Data.Array (drop, mapWithIndex, take, updateAt)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
 import Halogen as H
 import Halogen.Aff as HA
@@ -45,6 +46,8 @@ instance showSource :: Show Source where
 data Action
   = NoOp
   | AddTag
+  | RemoveTag Int
+  | UpdateTag Int Tag
 
 component :: forall q i o m. H.Component HH.HTML q i o m
 component =
@@ -67,9 +70,19 @@ handleAction :: forall a. MonadState State a => Action -> a Unit
 handleAction = case _ of
   NoOp -> H.modify_ \state -> state
   AddTag -> H.modify_ \state -> state { album = addTag state.album "" }
+  UpdateTag i tag -> H.modify_ \state -> state { album = updateTag state.album i tag }
+  RemoveTag i -> H.modify_ \state -> state { album = removeTag state.album i }
 
 addTag :: Album -> Tag -> Album
 addTag album tag = album { tags = album.tags <> [ tag ] }
+
+updateTag :: Album -> Int -> Tag -> Album
+updateTag album i tag = album { tags = updatedTags }
+  where
+  updatedTags = fromMaybe album.tags (updateAt i tag album.tags)
+
+removeTag :: Album -> Int -> Album
+removeTag album i = album { tags = take i album.tags <> drop (i + 1) album.tags }
 
 render :: forall a. State -> HH.HTML a Action
 render state =
@@ -97,7 +110,7 @@ renderAlbumForm { album } =
         ]
     , HH.div_
         ( [ HH.label_ [ HH.text "Tags" ] ]
-            <> (map renderTag album.tags)
+            <> (mapWithIndex renderTag album.tags)
             <> [ HH.button [ HE.onClick \_ -> Just AddTag ] [ HH.text "Add more" ] ]
         )
     ]
@@ -110,11 +123,19 @@ renderSourceOption activeSource source =
     ]
     [ HH.text $ show source ]
 
-renderTag :: forall a. Tag -> HH.HTML a Action
-renderTag tag =
+renderTag :: forall a. Int -> Tag -> HH.HTML a Action
+renderTag i tag =
   HH.div_
-    [ HH.input [ inlineBlock, HP.value tag ]
-    , HH.button [ inlineBlock ] [ HH.text "Remove" ]
+    [ HH.input
+        [ inlineBlock
+        , HP.value tag
+        , HE.onValueInput $ Just <<< (UpdateTag i)
+        ]
+    , HH.button
+        [ inlineBlock
+        , HE.onClick \_ -> Just (RemoveTag i)
+        ]
+        [ HH.text "Remove" ]
     ]
 
 inlineBlock :: forall a b. HP.IProp a b
