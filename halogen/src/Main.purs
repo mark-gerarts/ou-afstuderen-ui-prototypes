@@ -1,10 +1,15 @@
 module Main where
 
 import Prelude
+import Affjax as AX
+import Affjax.RequestBody as RequestBody
+import Affjax.ResponseFormat as AXRF
 import Control.Monad.State (class MonadState)
+import Data.Argonaut.Core as J
 import Data.Array (drop, mapWithIndex, take, updateAt)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Effect (Effect)
+import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.Aff as HA
 import Halogen.HTML as HH
@@ -19,7 +24,9 @@ main =
     runUI component unit body
 
 type State
-  = { album :: Album }
+  = { album :: Album
+    , submitted :: Boolean
+    }
 
 type Album
   = { name :: String
@@ -51,8 +58,9 @@ data Action
   | UpdateName String
   | UpdateArtist String
   | UpdateSource Source
+  | SubmitForm
 
-component :: forall q i o m. H.Component HH.HTML q i o m
+component :: forall query input output m. MonadAff m => H.Component HH.HTML query input output m
 component =
   H.mkComponent
     { initialState
@@ -67,9 +75,10 @@ component =
         , source: Digital
         , tags: [ "Rock" ]
         }
+    , submitted: false
     }
 
-handleAction :: forall a. MonadState State a => Action -> a Unit
+handleAction :: forall output m. MonadAff m => Action -> H.HalogenM State Action () output m Unit
 handleAction = case _ of
   NoOp -> H.modify_ \state -> state
   AddTag -> H.modify_ \state -> state { album = addTag state.album "" }
@@ -78,6 +87,9 @@ handleAction = case _ of
   UpdateName name -> H.modify_ \state -> state { album = state.album { name = name } }
   UpdateArtist artist -> H.modify_ \state -> state { album = state.album { artist = artist } }
   UpdateSource source -> H.modify_ \state -> state { album = state.album { source = source } }
+  SubmitForm -> do
+    r <- H.liftAff $ AX.post_ "http://localhost:8080" (Just (RequestBody.json (J.fromString "Hello")))
+    H.modify_ \state -> state { submitted = true }
 
 addTag :: Album -> Tag -> Album
 addTag album tag = album { tags = album.tags <> [ tag ] }
@@ -99,7 +111,7 @@ render state =
     ]
 
 renderAlbumForm :: forall a. State -> HH.HTML a Action
-renderAlbumForm { album } =
+renderAlbumForm { album, submitted } =
   HH.div
     []
     [ HH.div_
@@ -127,6 +139,9 @@ renderAlbumForm { album } =
             <> (mapWithIndex renderTag album.tags)
             <> [ HH.button [ HE.onClick \_ -> Just AddTag ] [ HH.text "Add more" ] ]
         )
+    , HH.button
+        [ HE.onClick \_ -> Just SubmitForm ]
+        [ HH.text $ if submitted then "Submitted!" else "Submit" ]
     ]
 
 renderSourceOption :: forall a. Source -> Source -> HH.HTML a Action
