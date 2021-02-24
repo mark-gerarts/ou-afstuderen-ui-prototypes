@@ -3,8 +3,7 @@ module Main where
 import Prelude
 import Affjax as AX
 import Affjax.RequestBody as RequestBody
-import Affjax.ResponseFormat as AXRF
-import Control.Monad.State (class MonadState)
+import Data.Argonaut (class EncodeJson, encodeJson)
 import Data.Argonaut.Core as J
 import Data.Array (drop, mapWithIndex, take, updateAt)
 import Data.Maybe (Maybe(..), fromMaybe)
@@ -50,6 +49,9 @@ instance showSource :: Show Source where
   show LP = "LP"
   show Digital = "Digital"
 
+instance encodeJsonSource :: EncodeJson Source where
+  encodeJson = encodeJson <<< show
+
 data Action
   = NoOp
   | AddTag
@@ -88,7 +90,8 @@ handleAction = case _ of
   UpdateArtist artist -> H.modify_ \state -> state { album = state.album { artist = artist } }
   UpdateSource source -> H.modify_ \state -> state { album = state.album { source = source } }
   SubmitForm -> do
-    r <- H.liftAff $ AX.post_ "http://localhost:8080" (Just (RequestBody.json (J.fromString "Hello")))
+    album <- H.gets _.album
+    r <- H.liftAff $ AX.post_ "http://localhost:8080" (Just (RequestBody.json (albumToJson album)))
     H.modify_ \state -> state { submitted = true }
 
 addTag :: Album -> Tag -> Album
@@ -101,6 +104,9 @@ updateTag album i tag = album { tags = updatedTags }
 
 removeTag :: Album -> Int -> Album
 removeTag album i = album { tags = take i album.tags <> drop (i + 1) album.tags }
+
+albumToJson :: Album -> J.Json
+albumToJson = encodeJson
 
 render :: forall a. State -> HH.HTML a Action
 render state =
@@ -140,7 +146,7 @@ renderAlbumForm { album, submitted } =
             <> [ HH.button [ HE.onClick \_ -> Just AddTag ] [ HH.text "Add more" ] ]
         )
     , HH.button
-        [ HE.onClick \_ -> Just SubmitForm ]
+        [ HE.onClick \_ -> Just SubmitForm, HP.disabled submitted ]
         [ HH.text $ if submitted then "Submitted!" else "Submit" ]
     ]
 

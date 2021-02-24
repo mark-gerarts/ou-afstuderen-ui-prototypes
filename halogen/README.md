@@ -7,6 +7,8 @@
 - Het feit dat het erg op Haskell lijkt is een beetje dubbel: aan de ene kant
   kun je snel concepten overnemen, maar vaak zijn ze net dat beetje anders qua
   syntax of werking.
+- Ik ervaar het als moeilijk om dingen te implementeren, zeker in vergelijking
+  met Elm.
 
 ## Usage
 
