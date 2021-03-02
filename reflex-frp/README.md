@@ -41,3 +41,16 @@ Building the frontend (not advised for development):
 ```
 $ nix-build -o frontend-result -A ghcjs.frontend
 ```
+
+Building with cabal (faster, preferred for development):
+
+```
+$ # This lands you in a reflex powered shell with several build tools available.
+$ # See the "development setup" link above for more information
+$ nix-shell -A shells.ghcjs
+$ # While inside this shell:
+$ build # Single build
+$ watch # Triggers builds on file changes in the frontend directory
+```
+
+The cabal build output can be found in the `dist-ghcjs` directory.
