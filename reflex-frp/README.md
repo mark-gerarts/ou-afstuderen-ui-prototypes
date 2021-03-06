@@ -20,11 +20,20 @@
   het potentieel geen goede kandidaat om te gebruiken in een research project
   dat vaak van richting moet veranderen. Ik heb schrik dat je met Reflex vast
   gaat lopen in de dependencies.
+- Het is me niet gelukt om mijn editor (vscode) werkend te krijgen met
+  intellisense etc...
+- Compilen via cabal is nog steeds *traag*. Ik ben ervan overtuigd dat obelisk
+  de way to go is, maar totdat het issue is opgelost is het helaas geen optie.
+- Documentatie *lijkt* in het begin zeer uitgebreid, maar de verschillende
+  bronnen herhalen vaak dezelfde informatie, en er is geen volledige reference
+  te vinden.
 
 ## Useful resources
 
 - [Development setup](https://github.com/reflex-frp/reflex-platform/blob/develop/docs/project-development.rst)
 - [Reflex FRP introduction](https://github.com/hansroland/reflex-dom-inbits/blob/master/tutorial.md)
+- [Official tutorial](https://reflex-frp.org/tutorial)
+- [Examples](https://examples.reflex-frp.org/examples)
 
 ## Installation/usage
 
