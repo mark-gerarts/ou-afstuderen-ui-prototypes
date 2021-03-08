@@ -27,6 +27,14 @@
 - Documentatie *lijkt* in het begin zeer uitgebreid, maar de verschillende
   bronnen herhalen vaak dezelfde informatie, en er is geen volledige reference
   te vinden.
+  - "Browse the haddock docs for examples" -> geen examples
+  - Delen van de documentatie outdated (e.g. deprecated MonadWidget)
+  - Veel uitzoekwerk is trial & error
+- Mogelijks interessante
+  [paper](https://futureofcoding.org/papers/comprehensible-frp/comprehensible-frp.pdf),
+  en [deze](https://lirias.kuleuven.be/retrieve/466587)
+- Hoewel ik denk dat Reflex enorm krachtig is, denk ik ook dat de leercurve te
+  groot is voor dit project.
 
 ## Useful resources
 
@@ -34,6 +42,7 @@
 - [Reflex FRP introduction](https://github.com/hansroland/reflex-dom-inbits/blob/master/tutorial.md)
 - [Official tutorial](https://reflex-frp.org/tutorial)
 - [Examples](https://examples.reflex-frp.org/examples)
+- [Main docs](http://docs.reflex-frp.org/en/latest/reflex_docs.html)
 
 ## Installation/usage
 

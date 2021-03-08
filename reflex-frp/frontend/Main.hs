@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE RecursiveDo #-}
@@ -5,11 +7,16 @@
 
 import Control.Monad (forM)
 import Control.Monad.Fix (MonadFix)
+import Control.Monad.IO.Class (MonadIO)
+import Data.Aeson
+import Data.List (intercalate)
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Monoid
 import qualified Data.Text as T
+import GHC.Generics
 import Reflex.Dom
+import Reflex.Dom.Xhr
 
 data Album = Album
   { name :: String,
@@ -17,6 +24,14 @@ data Album = Album
     source :: String,
     tags :: [String]
   }
+  deriving (Generic, ToJSON, FromJSON)
+
+data Resp = RespOk | RespError deriving (Eq)
+
+-- TODO's
+-- - Collecting and submitting the entered data
+-- - "Add more" component for tag entry
+-- - Toggle "fetch data"-button's text and disabled status
 
 main :: IO ()
 main = mainWidgetWithHead headElement bodyElement
@@ -37,9 +52,11 @@ headElement = do
         )
         $ return ()
 
-bodyElement :: (DomBuilder t m, PostBuild t m, MonadHold t m, MonadFix m) => m ()
+bodyElement :: MonadWidget t m => m ()
 bodyElement = do
   el "h1" $ text "Reflex"
+
+  -- Album edit form.
   el "h2" $ text "Album form"
   el "div" $ do
     el "div" $ do
@@ -47,28 +64,39 @@ bodyElement = do
       _ <-
         inputElement $
           def
-            & inputElementConfig_initialValue .~ (T.pack name)
+            & inputElementConfig_initialValue .~ (T.pack (name initialAlbum))
       return ()
     el "div" $ do
       el "label" $ text "Artist"
       _ <-
         inputElement $
           def
-            & inputElementConfig_initialValue .~ (T.pack artist)
+            & inputElementConfig_initialValue .~ (T.pack (artist initialAlbum))
       return ()
     el "div" $ do
       el "label" $ text "Source"
-      _ <- dropdown source (constDyn sources) def
+      _ <- dropdown (source initialAlbum) (constDyn sources) def
       return ()
     el "div" $ do
       el "label" $ text "Tags"
-      forM tags tagElement
+      forM (tags initialAlbum) tagElement
       _ <- button "Add more"
       return ()
-    _ <- button "Submit"
+
+    -- Submitting the album.
+    submitEvent <- button "Submit"
+    let albumPostRequest = postJson "http://localhost:8080" initialAlbum
+    _ <- performRequestAsync (tag (constant albumPostRequest) submitEvent)
     return ()
-  where
-    Album {..} = initialAlbum
+
+  -- Fetching an album from the server and displaying it.
+  el "h2" $ text "Displaying JSON data"
+  fetchDataEvent <- button "Fetch JSON data from server"
+  let fetchDataRequest = xhrRequest "GET" "http://localhost:8080/album/1" def
+  evResp <- performRequestAsync (tag (constant fetchDataRequest) fetchDataEvent)
+  dynAlbum <- holdDyn Nothing $ fmap decodeXhrResponse evResp
+  dyn $ displayAlbum <$> dynAlbum
+  return ()
 
 sources :: Map String T.Text
 sources =
@@ -87,6 +115,18 @@ initialAlbum =
       tags = ["Rock"]
     }
 
+displayAlbum :: (MonadWidget t m) => Maybe Album -> m ()
+displayAlbum Nothing = blank
+displayAlbum (Just album) = el "dl" $ do
+  el "dd" $ text "Name"
+  el "dt" $ text $ T.pack $ name album
+  el "dd" $ text "Artist"
+  el "dt" $ text $ T.pack $ artist album
+  el "dd" $ text "Source"
+  el "dt" $ text $ T.pack $ source album
+  el "dd" $ text "Tags"
+  el "dt" $ text $ T.pack $ concat (intercalate ", " $ tags album)
+
 tagElement :: (DomBuilder t m, PostBuild t m) => String -> m ()
 tagElement tag = do
   el "div" $ do
@@ -94,5 +134,11 @@ tagElement tag = do
       inputElement $
         def
           & inputElementConfig_initialValue .~ (T.pack tag)
-    _ <- button "Remove"
+          & inputElementConfig_elementConfig . elementConfig_initialAttributes
+            .~ ("style" =: "display:inline-block")
+    (_, _) <- elAttr' "button" ("style" =: "display:inline-block") $ do
+      text "Remove"
     return ()
+
+insertNew :: a -> [a] -> [a]
+insertNew x xs = xs ++ [x]
