@@ -43,6 +43,8 @@ type Tag = String
 data Action
   = SubmitForm
   | UpdateName String
+  | UpdateArtist String
+  | UpdateSource Source
   | AddTag
   | RemoveTag Int
   | UpdateTag Int MisoString
@@ -106,7 +108,11 @@ updateModel FetchAlbumData model =
 updateModel (SetAlbumData album) model =
   noEff model {serverResponse = Just album}
 updateModel (UpdateName name) model@(Model {album = album}) =
-  noEff (model {album = album {name = name}})
+  noEff $ model {album = album {name = name}}
+updateModel (UpdateArtist artist) model@(Model {album = album}) =
+  noEff $ model {album = album {artist = artist}}
+updateModel (UpdateSource source) model@(Model {album = album}) =
+  noEff $ model {album = album {source = source}}
 
 viewModel :: Model -> View Action
 viewModel (Model {album = Album {..}, ..}) =
@@ -130,13 +136,19 @@ viewModel (Model {album = Album {..}, ..}) =
       div_
         []
         [ label_ [for_ "artist"] [text "Artist"],
-          input_ [id_ "artist", value_ $ toMisoString artist]
+          input_
+            [ id_ "artist",
+              value_ $ toMisoString artist,
+              onInput (UpdateArtist . fromMisoString)
+            ]
         ],
       div_
         []
         [ label_ [for_ "source"] [text "Source"],
           select_
-            [id_ "source"]
+            [ id_ "source",
+              onChange (UpdateSource . sourceFromString . fromMisoString)
+            ]
             [ option_ [value_ "cd", selected_ (source == CD)] [text "CD"],
               option_ [value_ "lp", selected_ (source == LP)] [text "LP"],
               option_ [value_ "digital", selected_ (source == Digital)] [text "Digital"]
@@ -167,7 +179,12 @@ viewTag :: Tag -> Int -> View Action
 viewTag tag i =
   div_
     []
-    [ input_ [id_ "tags", inlineBlock, value_ $ toMisoString tag, onInput $ UpdateTag i],
+    [ input_
+        [ id_ "tags",
+          inlineBlock,
+          value_ $ toMisoString tag,
+          onInput $ UpdateTag i
+        ],
       button_ [inlineBlock, onClick $ RemoveTag i] [text "Remove"]
     ]
 
@@ -227,3 +244,23 @@ fetchAlbum = do
           reqWithCredentials = False,
           reqData = NoData
         }
+
+viewSourceOption :: Source -> Source -> View Action
+viewSourceOption source activeSource =
+  option_
+    [ value_ $ toMisoString $ sourceToString source,
+      selected_ (source == activeSource)
+    ]
+    [text $ toMisoString $ sourceToString source]
+
+sourceFromString :: String -> Source
+sourceFromString x = case x of
+  "cd" -> CD
+  "lp" -> LP
+  _ -> Digital
+
+sourceToString :: Source -> String
+sourceToString x = case x of
+  CD -> "CD"
+  LP -> "LP"
+  _ -> "Digital"

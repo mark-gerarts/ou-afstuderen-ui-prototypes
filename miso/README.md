@@ -6,6 +6,7 @@
 - De quickstart commands werken niet (loopt vast op `nix-shell -A env`) (fixed)
 - Documentatie: link naar voorbeeld client/server geeft een 404 (wat wel nuttig was voor ons)
 - Het voorbeeld met JSaddle heeft geen live reload zoals advertised
+  - Ik ben niet de enige met dit probleem: https://github.com/dmjio/miso/issues/642
 - onSubmit met preventDefault lijkt niet te werken - al veel tijd in gestoken zonder oplossing
   - In Functional Programming Slack om hulp gevraagd (30/01 - nog geen antwoord)
   - Blijkt enkel in JSaddle een probleem te zijn
@@ -16,7 +17,9 @@
 - Werking doet aan Elm denken, eenvoudig en vlot
 - Debuggen is niet gemakkelijk
 - Het is niet eenvoudig mogelijk om JSaddle te combineren met een XHR request (ghcjs vs ghc) -> toch maar afstappen van JSaddle
+  - Als ik ooit terug wil overgaan is hier wat uitleg https://github.com/dmjio/miso/issues/594. Het is vooral gewoon gek dat dit niet out-of-the-box werkt.
 - Het gebruik van Nix wordt aangeraden, maar dit heeft een heel grote leercurve - komend van iemand die NixOS gebruikt.
+- Heel gek: in het scenario dat er in `updateModel` een case ontbreekt, komt de compiler niet klagen. Maar: de app werkt dan niet omdat er bij startup een JS error in de console komt.
 
 ## Usage
 
