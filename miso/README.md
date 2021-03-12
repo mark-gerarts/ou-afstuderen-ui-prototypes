@@ -3,7 +3,7 @@
 ## Bemerkingen
 
 - De installatie met Nix is niet zo straightforward.
-- De quickstart commands werken niet (loopt vast op `nix-shell -A env`)
+- De quickstart commands werken niet (loopt vast op `nix-shell -A env`) (fixed)
 - Documentatie: link naar voorbeeld client/server geeft een 404 (wat wel nuttig was voor ons)
 - Het voorbeeld met JSaddle heeft geen live reload zoals advertised
 - onSubmit met preventDefault lijkt niet te werken - al veel tijd in gestoken zonder oplossing
@@ -11,7 +11,8 @@
   - Blijkt enkel in JSaddle een probleem te zijn
   - Tijdelijk opgelost door een div ipv een form te gebruiken
 - Rechtstreeks Haskell kunnen gebruiken is wel een groot voordeel
-  - Autocomplete in vscode werkt niet out-of-the-box zoals bij een Stack project
+  - Autocomplete, intellisense etc in vscode werkt niet out-of-the-box zoals bij een standaard Stack project
+  - Dit deelt Miso met Reflex. Beide gebruiken GHCJS, wat moeilijk is om te installeren en te integreren in de editor
 - Werking doet aan Elm denken, eenvoudig en vlot
 - Debuggen is niet gemakkelijk
 - Het is niet eenvoudig mogelijk om JSaddle te combineren met een XHR request (ghcjs vs ghc) -> toch maar afstappen van JSaddle

@@ -117,15 +117,15 @@ initialAlbum =
 
 displayAlbum :: (MonadWidget t m) => Maybe Album -> m ()
 displayAlbum Nothing = blank
-displayAlbum (Just album) = el "dl" $ do
+displayAlbum (Just (Album {..})) = el "dl" $ do
   el "dd" $ text "Name"
-  el "dt" $ text $ T.pack $ name album
+  el "dt" $ text $ T.pack $ name
   el "dd" $ text "Artist"
-  el "dt" $ text $ T.pack $ artist album
+  el "dt" $ text $ T.pack $ artist
   el "dd" $ text "Source"
-  el "dt" $ text $ T.pack $ source album
+  el "dt" $ text $ T.pack $ source
   el "dd" $ text "Tags"
-  el "dt" $ text $ T.pack $ concat (intercalate ", " $ tags album)
+  el "dt" $ text $ T.intercalate ", " $ map T.pack tags
 
 tagElement :: (DomBuilder t m, PostBuild t m) => String -> m ()
 tagElement tag = do

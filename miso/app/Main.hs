@@ -42,6 +42,7 @@ type Tag = String
 
 data Action
   = SubmitForm
+  | UpdateName String
   | AddTag
   | RemoveTag Int
   | UpdateTag Int MisoString
@@ -104,6 +105,8 @@ updateModel FetchAlbumData model =
   model <# do SetAlbumData <$> fetchAlbum
 updateModel (SetAlbumData album) model =
   noEff model {serverResponse = Just album}
+updateModel (UpdateName name) model@(Model {album = album}) =
+  noEff (model {album = album {name = name}})
 
 viewModel :: Model -> View Action
 viewModel (Model {album = Album {..}, ..}) =
@@ -118,7 +121,11 @@ viewModel (Model {album = Album {..}, ..}) =
       div_
         []
         [ label_ [for_ "album"] [text "Name"],
-          input_ [id_ "album", value_ $ toMisoString name]
+          input_
+            [ id_ "album",
+              value_ $ toMisoString name,
+              onInput (UpdateName . fromMisoString)
+            ]
         ],
       div_
         []
