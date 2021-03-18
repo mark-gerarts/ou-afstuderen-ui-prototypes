@@ -36,6 +36,12 @@
 - Hoewel ik denk dat Reflex enorm krachtig is, denk ik ook dat de leercurve te
   groot is voor dit project.
 
+Update 18/03
+
+- Eindelijk een dev environment werkend gekregen! Live reloads + IDE integration
+  én snelle compile times!
+-
+
 ## Useful resources
 
 - [Development setup](https://github.com/reflex-frp/reflex-platform/blob/develop/docs/project-development.rst)
@@ -43,6 +49,7 @@
 - [Official tutorial](https://reflex-frp.org/tutorial)
 - [Examples](https://examples.reflex-frp.org/examples)
 - [Main docs](http://docs.reflex-frp.org/en/latest/reflex_docs.html)
+- [Getting started blog](https://blog.typeable.io/posts/2021-03-15-reflex-1.html)
 
 ## Installation/usage
 
@@ -67,8 +74,8 @@ $ # This lands you in a reflex powered shell with several build tools available.
 $ # See the "development setup" link above for more information
 $ nix-shell -A shells.ghcjs
 $ # While inside this shell:
-$ build # Single build
-$ watch # Triggers builds on file changes in the frontend directory
+$ code . # Open editor with correct paths for HLS etc
+$ ghcid --command 'cabal new-repl frontend' --test 'Main.main' # Run warp with live reload
 ```
 
 The cabal build output can be found in the `dist-ghcjs` directory.
